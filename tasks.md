@@ -36,8 +36,8 @@ Principio rector:
 
 - [x] **2.1 Modelos Pydantic**
   - [x] Crear modelos: `RawInput`, `ExtractedExpense`, `ProvisionalExpense`, `FinalExpense`.
-- [ ] **2.2 Estados del Gasto**
-  - [ ] Definir estados explícitos: `RECEIVED`, `ANALYZED`, `AWAITING_CONFIRMATION`, `CONFIRMED`, `CORRECTED`, `STORED`.
+- [x] **2.2 Estados del Gasto**
+  - [x] Definir estados explícitos: `RECEIVED`, `ANALYZED`, `AWAITING_CONFIRMATION`, `CONFIRMED`, `CORRECTED`, `STORED`.
 
 ---
 
