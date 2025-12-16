@@ -23,10 +23,10 @@ Principio rector:
   - **NOTA:** Se ha modificado el enfoque. En lugar de un webhook directo de Telegram, se utiliza **n8n** para manejar la recepción de datos. La aplicación expone un endpoint genérico `/process-expense` para este propósito.
   - [x] Endpoint `/process-expense` implementado en FastAPI.
   - [x] El endpoint recibe y loguea el payload.
-- [ ] **1.4 Input Handler**
-  - [ ] Implementar `input_handler.py`.
-  - [ ] Normalizar texto.
-  - [ ] Implementar stubs para voz, imagen y PDF.
+- [x] **1.4 Input Handler**
+  - [x] Implementar `input_handler.py`.
+  - [x] Normalizar texto.
+  - [x] Implementar stubs para voz, imagen y PDF.
 
 ---
 
@@ -34,8 +34,8 @@ Principio rector:
 
 **Objetivo:** Tener claridad absoluta sobre qué es un gasto y en qué estado vive.
 
-- [ ] **2.1 Modelos Pydantic**
-  - [ ] Crear modelos: `RawInput`, `ExtractedExpense`, `ProvisionalExpense`, `FinalExpense`.
+- [x] **2.1 Modelos Pydantic**
+  - [x] Crear modelos: `RawInput`, `ExtractedExpense`, `ProvisionalExpense`, `FinalExpense`.
 - [ ] **2.2 Estados del Gasto**
   - [ ] Definir estados explícitos: `RECEIVED`, `ANALYZED`, `AWAITING_CONFIRMATION`, `CONFIRMED`, `CORRECTED`, `STORED`.
 
