@@ -1,6 +1,19 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime, date
+from enum import Enum
+
+
+class ExpenseStatus(str, Enum):
+    """
+    Defines the explicit states an expense can be in throughout its lifecycle.
+    """
+    RECEIVED = "RECEIVED"
+    ANALYZED = "ANALYZED"
+    AWAITING_CONFIRMATION = "AWAITING_CONFIRMATION"
+    CONFIRMED = "CONFIRMED"
+    CORRECTED = "CORRECTED"
+    STORED = "STORED"
 
 class RawInput(BaseModel):
     """
@@ -39,7 +52,7 @@ class ProvisionalExpense(BaseModel):
     confidence_score: float
     processing_method: str = Field(..., description="How the expense was classified, e.g., 'provider_match', 'keyword_match', 'ai_inference'")
     validation_notes: List[str] = []
-    status: str = "AWAITING_CONFIRMATION"
+    status: ExpenseStatus = ExpenseStatus.AWAITING_CONFIRMATION
     timestamp: datetime = Field(default_factory=datetime.now)
 
 class FinalExpense(BaseModel):
@@ -64,4 +77,4 @@ class FinalExpense(BaseModel):
     confirmed_at: datetime = Field(default_factory=datetime.now)
     audit_log: List[str] = []
 
-    status: str = "CONFIRMED"
+    status: ExpenseStatus = ExpenseStatus.CONFIRMED
