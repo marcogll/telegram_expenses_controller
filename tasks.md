@@ -13,20 +13,19 @@ Principio rector:
 **Objetivo:** Recibir datos de gastos y dejarlos listos para procesar.
 
 - [x] **1.1 Bootstrap del Proyecto**
-  - [x] Crear estructura de carpetas según README.
-  - [x] Configurar entorno virtual.
-  - [x] Instalar dependencias.
-  - [x] FastAPI levantando correctamente.
-- [x] **1.2 Variables de Entorno**
-  - [x] Definir `.env.example` con las variables necesarias.
-- [x] **1.3 Webhook y Entrada de Datos**
-  - **NOTA:** Se ha modificado el enfoque. En lugar de un webhook directo de Telegram, se utiliza **n8n** para manejar la recepción de datos. La aplicación expone un endpoint genérico `/process-expense` para este propósito.
-  - [x] Endpoint `/process-expense` implementado en FastAPI.
-  - [x] El endpoint recibe y loguea el payload.
-- [x] **1.4 Input Handler**
-  - [x] Implementar `input_handler.py`.
-  - [x] Normalizar texto.
-  - [x] Implementar stubs para voz, imagen y PDF.
+  - [x] Crear estructura de carpetas modular en `/app`.
+  - [x] Configurar entorno virtual y `requirements.txt`.
+  - [x] Dockerización con `docker-compose.yml`.
+- [x] **1.2 Configuración y Base de Datos**
+  - [x] Definir `.env.example` con variables para OpenAI, Telegram y MySQL.
+  - [x] Configurar servicio de **MySQL 8.0** en Docker.
+  - [x] Implementar `app/config.py` para carga de variables.
+- [x] **1.3 Entrada de Datos (Multimodal)**
+  - [x] Endpoint `/process-expense` para integración externa.
+  - [x] Endpoint `/webhook/telegram` para recepción directa.
+  - [x] Implementar módulos de ingestión inicial (`text.py`, `image.py`, `audio.py`).
+- [x] **1.4 Orquestación Inicial**
+  - [x] Implementar `router.py` para coordinar el pipeline.
 
 ---
 
@@ -35,71 +34,72 @@ Principio rector:
 **Objetivo:** Tener claridad absoluta sobre qué es un gasto y en qué estado vive.
 
 - [x] **2.1 Modelos Pydantic**
-  - [x] Crear modelos: `RawInput`, `ExtractedExpense`, `ProvisionalExpense`, `FinalExpense`.
+  - [x] Crear modelos en `app/schema/base.py`: `RawInput`, `ExtractedExpense`, `ProvisionalExpense`, `FinalExpense`.
 - [x] **2.2 Estados del Gasto**
-  - [x] Definir estados explícitos: `RECEIVED`, `ANALYZED`, `AWAITING_CONFIRMATION`, `CONFIRMED`, `CORRECTED`, `STORED`.
+  - [x] Definir `ExpenseStatus` (RECEIVED, ANALYZED, CONFIRMED, etc.).
+- [x] **2.3 Persistencia SQL**
+  - [x] Implementar modelos SQLAlchemy y repositorios en `app/persistence`.
 
 ---
 
-## Fase 3 – Configuración como Lógica
+## Fase 3 – Configuración y Lógica de Negocio
 
 **Objetivo:** Mover la inteligencia determinística fuera del código.
 
-- [ ] **3.1 Loader de Configuración**
-  - [ ] Implementar `config_loader.py`.
+- [/] **3.1 Loader de Configuración**
+  - [ ] Implementar carga dinámica de `config/providers.csv` y `keywords.csv`.
 - [ ] **3.2 Matching de Proveedores**
   - [ ] Implementar matching por nombre y aliases.
-- [ ] **3.3 Matching de Keywords**
-  - [ ] Implementar búsqueda de keywords en descripciones.
+- [ ] **3.3 Clasificación por Keywords**
+  - [ ] Implementar búsqueda de keywords en descripciones para categorización automática.
 
 ---
 
 ## Fase 4 – The Analyst (Procesamiento Inteligente)
 
-**Objetivo:** Convertir texto crudo en un gasto provisional estructurado.
+**Objetivo:** Convertir texto crudo en un gasto provisional estructurado mediante IA.
 
-- [ ] **4.1 Extracción Multimodal (Completa)**
-  - [ ] Voz → transcripción IA.
-  - [ ] Imagen → OCR IA.
-  - [ ] PDF → extracción semiestructurada.
-- [ ] **4.2 Clasificación en Cascada**
-  - [ ] Implementar pipeline: Proveedores → Keywords → IA.
-- [ ] **4.3 Validación Fiscal Básica**
-  - [ ] Implementar detección de CFDI y validación de RFC.
-- [ ] **4.4 Score de Confianza**
-  - [ ] Calcular y persistir el score de confianza del análisis.
+- [/] **4.1 Extracción Multimodal (Completa)**
+  - [x] Texto -> Extracción con GPT.
+  - [ ] Voz -> Transcripción (Whisper/OpenAI).
+  - [ ] Imagen -> OCR + Extracción.
+- [ ] **4.2 Validación y Score de Confianza**
+  - [ ] Implementar `app/ai/confidence.py` para evaluar la calidad de la extracción.
+- [ ] **4.3 Detección de Duplicados**
+  - [ ] Evitar registrar el mismo gasto dos veces.
 
 ---
 
-## Fase 5 – Interacción y Auditoría
+## Fase 5 – Interacción con el Usuario
 
-**Objetivo:** Asegurar control humano y trazabilidad.
+**Objetivo:** Asegurar control humano y correcciones.
 
-- [ ] **5.1 Mensaje de Confirmación**
-  - [ ] Enviar resumen del gasto procesado al usuario.
+- [ ] **5.1 Flujo de Confirmación en Telegram**
+  - [ ] Enviar botones de "Confirmar" / "Editar" tras procesar un gasto.
 - [ ] **5.2 Parsing de Correcciones**
-  - [ ] Implementar la capacidad de aceptar correcciones en lenguaje natural.
-- [ ] **5.3 The Auditor**
-  - [ ] Implementar el agente "Auditor" para registrar todos los cambios.
+  - [ ] Capacidad de corregir campos específicos mediante mensajes de texto.
+- [ ] **5.3 Comandos de Consulta**
+  - [ ] Implementar `/status` y `/search` funcionales.
 
 ---
 
-## Fase 6 – Persistencia y Cierre
+## Fase 6 – Exportación y Cierre
 
-**Objetivo:** Guardar datos finales de forma segura y limpia.
+**Objetivo:** Facilitar el uso de los datos fuera del sistema.
 
-- [ ] **6.1 Google Sheets**
-  - [ ] Implementar la escritura de datos en Google Sheets.
-- [ ] **6.2 Limpieza de Estados Temporales**
-  - [ ] Asegurar la limpieza de datos temporales tras el procesamiento.
+- [ ] **6.1 Exportación a CSV/Excel**
+  - [x] Implementar exportador básico a CSV.
+- [ ] **6.2 Integración con Google Sheets (Opcional)**
+  - [ ] Sincronización automática de gastos confirmados.
 
 ---
 
-## Fase 7 – Hardening y Preparación a Futuro
+## Fase 7 – Hardening
 
-**Objetivo:** Fortalecer el sistema y prepararlo para escalar.
+**Objetivo:** Estabilidad y producción.
 
-- [ ] **7.1 Logs y Errores**
-  - [ ] Implementar logs estructurados y un manejo de errores robusto.
-- [ ] **7.2 Preparación para Escalar**
-  - [ ] Diseñar el sistema para soportar múltiples usuarios en el futuro.
+- [ ] **7.1 Manejo de Errores Robusto**
+  - [ ] Reintentos en llamadas a API de IA.
+  - [ ] Alertas de sistema.
+- [ ] **7.2 Logs de Auditoría**
+  - [ ] Registro detallado de quién cambió qué y cuándo.

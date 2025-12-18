@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -7,23 +7,23 @@ services:
       - "8000:80"
     volumes:
       - ./app:/app/app
-      - ./database.db:/app/database.db  # Mount the SQLite DB file
     env_file:
       - .env
     depends_on:
-      - db # Optional: if you switch to a managed DB like Postgres
+      - db
 
-  # Optional PostgreSQL service
-  # db:
-  #   image: postgres:13
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data/
-  #   environment:
-  #     - POSTGRES_USER=${DB_USER}
-  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
-  #     - POSTGRES_DB=${DB_NAME}
-  #   ports:
-  #     - "5432:5432"
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-expenses}
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
-# volumes:
-#   postgres_data:
+volumes:
+  mysql_data:

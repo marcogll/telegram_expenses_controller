@@ -13,6 +13,8 @@ openai
 
 # Database
 sqlalchemy
+pymysql        # For MySQL support
+cryptography   # Required for some MySQL auth methods
 psycopg2-binary  # For PostgreSQL, optional
 alembic       # For database migrations, optional
 

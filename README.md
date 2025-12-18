@@ -1,79 +1,81 @@
 # Telegram Expenses Bot
 
-A bot to track expenses via Telegram messages, using AI for data extraction.
+A modular, AI-powered bot to track and manage expenses via Telegram. It uses LLMs to extract structured data from text, images, and audio, and persists them for easy reporting.
+
+## Key Features
+
+- 🤖 **AI Extraction**: Automatically parses amount, currency, description, and date from natural language.
+- 🖼️ **Multimodal**: Supports text, images (receipts), and audio (voice notes) - *in progress*.
+- 📊 **Structured Storage**: Saves data to a database with support for exporting to CSV/Google Sheets.
+- 🛡️ **Audit Trail**: Keeps track of raw inputs and AI confidence scores for reliability.
+- 🐳 **Dockerized**: Easy deployment using Docker and Docker Compose.
 
 ## Project Structure
 
-This project follows a modular, service-oriented architecture.
+The project has transitioned to a more robust, service-oriented architecture located in the `/app` directory.
 
-- **/app**: Main application source code.
-  - **/ai**: AI models, prompts, and logic.
+- **/app**: Core application logic.
+  - **/ai**: LLM integration, prompts, and extraction logic.
   - **/audit**: Logging and raw data storage for traceability.
-  - **/ingestion**: Handlers for different input types (text, image, audio).
-  - **/integrations**: Connections to external services.
-  - **/modules**: Telegram command handlers.
-  - **/persistence**: Database models and data access layer.
-  - **/preprocessing**: Data cleaning and normalization.
-  - **/schema**: Pydantic data models.
-  - **main.py**: FastAPI application entry point.
-  - **router.py**: Main workflow orchestrator.
-  - **config.py**: Configuration loader.
-- **/raw_storage**: (Created automatically) Stores original uploaded files.
-- **Dockerfile**: Defines the container for the application.
-- **docker-compose.yml**: Orchestrates the application and database services.
-- **requirements.txt**: Python dependencies.
-- **.env.example**: Example environment variables.
+  - **/ingestion**: Handlers for different input types (text, image, audio, document).
+  - **/integrations**: External services (e.g., exporters, webhook clients).
+  - **/modules**: Telegram bot command handlers (`/start`, `/status`, etc.).
+  - **/persistence**: Database models and repositories (SQLAlchemy).
+  - **/preprocessing**: Data cleaning, validation, and language detection.
+  - **/schema**: Pydantic models for data validation and API documentation.
+  - **main.py**: FastAPI entry point and webhook handlers.
+  - **router.py**: Orchestrates the processing pipeline.
+- **/config**: Static configuration files (keywords, providers).
+- **/src**: Legacy/Initial implementation (Phase 1 & 2).
+- **tasks.md**: Detailed project roadmap and progress tracker.
 
-## How to Run
+## How It Works (Workflow)
 
-1.  **Set up environment variables:**
-    ```bash
-    cp .env.example .env
-    ```
-    Fill in the values in the `.env` file (Telegram token, OpenAI key, etc.).
+1.  **Input**: The user sends a message to the Telegram bot (text, image, or voice).
+2.  **Ingestion**: The bot receives the update and passes it to the `/app/ingestion` layer to extract raw text.
+3.  **Routing**: `router.py` takes the raw text and coordinates the next steps.
+4.  **Extraction**: The `/app/ai/extractor.py` uses OpenAI's GPT models to parse the text into a structured `ExtractedExpense`.
+5.  **Audit & Classify**: The `/app/ai/classifier.py` assigns categories and a confidence score.
+6.  **Persistence**: If confidence is high, the expense is automatically saved via `/app/persistence/repositories.py`. If low, it awaits manual confirmation.
 
-2.  **Build and run with Docker Compose:**
-    ```bash
-    docker-compose up --build
-    ```
+## Project Status
 
-3.  **Access the API:**
-    The API will be available at `http://localhost:8000`. The interactive documentation can be found at `http://localhost:8000/docs`.
+Current Phase: **Phase 3/4 - Intelligence & Processing**
 
-## Running the Telegram Bot
+- [x] **Phase 1: Infrastructure**: FastAPI, Docker, and basic input handling.
+- [x] **Phase 2: Data Models**: Explicit expense states and Pydantic schemas.
+- [/] **Phase 3: Logic**: Configuration loaders and provider matching (In Progress).
+- [/] **Phase 4: AI Analyst**: Multimodal extraction and confidence scoring (In Progress).
 
-This setup provides the backend API. To connect it to Telegram, you have two main options:
+## Setup & Development
 
-1.  **Webhook**: Set a webhook with Telegram to point to your deployed API's `/webhook/telegram` endpoint. This is the recommended production approach.
-2.  **Polling**: Modify the application to use polling instead of a webhook. This involves creating a separate script or modifying `main.py` to start the `python-telegram-bot` `Application` and add the handlers from the `modules` directory. This is simpler for local development.
+### 1. Environment Variables
+Copy `.env.example` to `.env` and fill in your credentials:
+```bash
+TELEGRAM_TOKEN=your_bot_token
+OPENAI_API_KEY=your_openai_key
+DATABASE_URL=mysql+pymysql://user:password@db:3306/expenses
 
-### Example: Adding Polling for Development
-
-You could add this to a new file, `run_bot.py`, in the root directory:
-
-```python
-import asyncio
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from app.config import config
-from app.modules import start, upload, status, search, admin
-
-def main() -> None:
-    """Start the bot."""
-    application = Application.builder().token(config.TELEGRAM_TOKEN).build()
-
-    # Add command handlers
-    application.add_handler(CommandHandler("start", start.start))
-    application.add_handler(CommandHandler("status", status.status))
-    application.add_handler(CommandHandler("search", search.search))
-    application.add_handler(CommandHandler("admin", admin.admin_command))
-
-    # Add message handler
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, upload.handle_message))
-
-    # Run the bot
-    application.run_polling()
-
-if __name__ == "__main__":
-    main()
+# MySQL specific (for Docker)
+MYSQL_ROOT_PASSWORD=root_password
+MYSQL_DATABASE=expenses
+MYSQL_USER=user
+MYSQL_PASSWORD=password
 ```
-You would then run `python run_bot.py` locally.
+
+### 2. Run with Docker
+```bash
+docker-compose up --build
+```
+
+### 3. Local Development (FastAPI)
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### 4. Running the Bot (Polling)
+For local testing without webhooks, you can run a polling script that uses the handlers in `app/modules`.
+
+---
+*Maintained by Marco Gallegos*

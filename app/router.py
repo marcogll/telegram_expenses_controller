@@ -8,6 +8,7 @@ import logging
 from app.schema.base import RawInput, ProvisionalExpense, FinalExpense, ExpenseStatus
 from app.ingestion import text, image, audio, document
 from app.ai import extractor, classifier
+from app.preprocessing import matcher
 from app.persistence import repositories
 from sqlalchemy.orm import Session
 
@@ -59,18 +60,22 @@ def process_expense_input(db: Session, raw_input: RawInput) -> FinalExpense:
     
     audited_expense = classifier.classify_and_audit(provisional_expense)
     
+    # 3.5 Deterministic Matching (Phase 3)
+    # Enrich data with categories from providers/keywords if available
+    match_metadata = matcher.get_metadata_from_match(extracted_data.description)
+    
     # For now, we auto-confirm if confidence is high.
     if audited_expense.confidence_score > 0.7:
         final_expense = FinalExpense(
             user_id=audited_expense.user_id,
-            provider_name=audited_expense.extracted_data.description, # Simplified mapping
+            provider_name=match_metadata.get("matched_name") or audited_expense.extracted_data.description,
             amount=audited_expense.extracted_data.amount,
             currency=audited_expense.extracted_data.currency,
             expense_date=audited_expense.extracted_data.expense_date,
             description=audited_expense.extracted_data.description,
-            category=audited_expense.category,
-            expense_type="personal", # Default
-            initial_processing_method=audited_expense.processing_method,
+            category=match_metadata.get("category") or audited_expense.category,
+            expense_type=match_metadata.get("expense_type") or "personal",
+            initial_processing_method=match_metadata.get("match_type") or audited_expense.processing_method,
             confirmed_by="auto-confirm"
         )
         
