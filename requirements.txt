@@ -1,7 +1,29 @@
+# Web Framework
 fastapi
-python-telegram-bot
-openai
-google-api-python-client
-pydantic
 uvicorn
+
+# Pydantic (used by FastAPI)
+pydantic
+
+# Environment variables
 python-dotenv
+
+# AI
+openai
+
+# Database
+sqlalchemy
+psycopg2-binary  # For PostgreSQL, optional
+alembic       # For database migrations, optional
+
+# Telegram Bot
+python-telegram-bot
+
+# HTTP Client
+httpx
+
+# For image/audio/pdf processing (examples, uncomment as needed)
+# Pillow
+# pytesseract
+# PyMuPDF
+# langdetect

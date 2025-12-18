@@ -1,232 +1,79 @@
-# Sistema de Gestión de Gastos Personalizable con Python y Telegram
+# Telegram Expenses Bot
 
-Este proyecto implementa un **sistema de gestión de gastos modular, auditable y altamente personalizable**, construido en Python y operado a través de un bot de Telegram. El objetivo no es solo registrar gastos, sino **entenderlos, clasificarlos y validarlos** con un equilibrio deliberado entre reglas explícitas (configuración humana) e inferencia asistida por IA.
+A bot to track expenses via Telegram messages, using AI for data extraction.
 
-El sistema permite registrar gastos usando **texto, notas de voz, imágenes (tickets) y documentos PDF (facturas)**. La IA se utiliza únicamente para interpretar datos no estructurados (OCR, transcripción, extracción semántica), mientras que **la lógica de negocio vive fuera del código**, en archivos CSV y JSON que el usuario controla.
+## Project Structure
 
-La filosofía central es simple pero potente:
+This project follows a modular, service-oriented architecture.
 
-> *La IA sugiere, las reglas deciden, el usuario confirma.*
+- **/app**: Main application source code.
+  - **/ai**: AI models, prompts, and logic.
+  - **/audit**: Logging and raw data storage for traceability.
+  - **/ingestion**: Handlers for different input types (text, image, audio).
+  - **/integrations**: Connections to external services.
+  - **/modules**: Telegram command handlers.
+  - **/persistence**: Database models and data access layer.
+  - **/preprocessing**: Data cleaning and normalization.
+  - **/schema**: Pydantic data models.
+  - **main.py**: FastAPI application entry point.
+  - **router.py**: Main workflow orchestrator.
+  - **config.py**: Configuration loader.
+- **/raw_storage**: (Created automatically) Stores original uploaded files.
+- **Dockerfile**: Defines the container for the application.
+- **docker-compose.yml**: Orchestrates the application and database services.
+- **requirements.txt**: Python dependencies.
+- **.env.example**: Example environment variables.
 
----
+## How to Run
 
-## Objetivos del Sistema
+1.  **Set up environment variables:**
+    ```bash
+    cp .env.example .env
+    ```
+    Fill in the values in the `.env` file (Telegram token, OpenAI key, etc.).
 
-* Eliminar fricción en el registro diario de gastos.
-* Evitar dependencias rígidas de lógica hardcodeada.
-* Mantener trazabilidad y control fiscal (especialmente en México).
-* Permitir adaptación rápida a cualquier negocio o uso personal.
-* Diseñar una base sólida para automatización contable posterior.
+2.  **Build and run with Docker Compose:**
+    ```bash
+    docker-compose up --build
+    ```
 
----
+3.  **Access the API:**
+    The API will be available at `http://localhost:8000`. The interactive documentation can be found at `http://localhost:8000/docs`.
 
-## Core Features
+## Running the Telegram Bot
 
-### Personalización Total (Config-Driven)
+This setup provides the backend API. To connect it to Telegram, you have two main options:
 
-La clasificación de gastos **no está en el código**. Proveedores, categorías, subcategorías, palabras clave y reglas fiscales se gestionan mediante archivos CSV y JSON editables.
+1.  **Webhook**: Set a webhook with Telegram to point to your deployed API's `/webhook/telegram` endpoint. This is the recommended production approach.
+2.  **Polling**: Modify the application to use polling instead of a webhook. This involves creating a separate script or modifying `main.py` to start the `python-telegram-bot` `Application` and add the handlers from the `modules` directory. This is simpler for local development.
 
-Esto permite:
+### Example: Adding Polling for Development
 
-* Ajustes sin despliegues.
-* Uso por personas no técnicas.
-* Reglas distintas por usuario o empresa.
+You could add this to a new file, `run_bot.py`, in the root directory:
 
-### Entrada Multimodal
+```python
+import asyncio
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from app.config import config
+from app.modules import start, upload, status, search, admin
 
-El bot acepta gastos mediante:
+def main() -> None:
+    """Start the bot."""
+    application = Application.builder().token(config.TELEGRAM_TOKEN).build()
 
-* Texto libre.
-* Notas de voz (transcripción automática).
-* Fotos de tickets (OCR).
-* Facturas PDF (extracción estructurada).
+    # Add command handlers
+    application.add_handler(CommandHandler("start", start.start))
+    application.add_handler(CommandHandler("status", status.status))
+    application.add_handler(CommandHandler("search", search.search))
+    application.add_handler(CommandHandler("admin", admin.admin_command))
 
-Todo converge en un modelo de gasto unificado.
+    # Add message handler
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, upload.handle_message))
 
-### Procesamiento Inteligente con IA (Controlada)
+    # Run the bot
+    application.run_polling()
 
-La IA se utiliza para:
-
-* Leer y transcribir información no estructurada.
-* Extraer proveedor, fecha, monto y conceptos.
-* Inferir contexto **solo cuando las reglas no aplican**.
-
-La decisión final prioriza reglas explícitas antes que inferencia probabilística.
-
-### Validación Fiscal (CFDI)
-
-Si el sistema detecta una factura:
-
-* Verifica que el RFC receptor coincida con el configurado.
-* Considera el régimen fiscal del usuario.
-* Marca inconsistencias como observaciones (no bloquea, pero alerta).
-
-### Flujo de Confirmación y Auditoría
-
-Ningún gasto entra al registro final sin pasar por confirmación.
-
-El sistema:
-
-* Presenta un resumen al usuario.
-* Permite correcciones naturales por chat.
-* Registra **qué cambió, quién lo cambió y por qué**.
-
-Esto garantiza integridad y auditabilidad.
-
----
-
-## Arquitectura de Datos: El Cerebro Configurable
-
-El núcleo del sistema es la carpeta `config/`. Aquí se define **cómo piensa el bot**.
-
-### 1. Configuración del Usuario
-
-**Archivo:** `config/user_config.json`
-
-Define la identidad fiscal y preferencias base del usuario.
-
-```json
-{
-  "user_name": "Marco Gallegos",
-  "rfc": "GAMM910513CW6",
-  "regimen_fiscal_default": "612 - Persona Física con Actividad Empresarial y Profesional",
-  "moneda_default": "MXN",
-  "pais": "MX",
-  "timezone": "America/Mexico_City"
-}
+if __name__ == "__main__":
+    main()
 ```
-
-Este archivo es crítico para validación CFDI y normalización de datos.
-
----
-
-### 2. Base de Proveedores
-
-**Archivo:** `config/providers.csv`
-
-Es la regla de clasificación **más fuerte del sistema**.
-
-```csv
-provider_name,aliases,categoria_principal,subcategoria,tipo_gasto_default
-Amazon,"amazon,amzn,amazon mx",Por Determinar,Compras en Línea,
-Office Depot,"officedepot,office",Administración,Suministros de oficina,negocio
-Uber Eats,"ubereats,uber",Personal,Comida a domicilio,personal
-GoDaddy,"godaddy",Tecnología,Dominios y Hosting,negocio
-Cinepolis,"cinepolis",Personal,Entretenimiento,personal
-```
-
-Si un proveedor coincide aquí, **no se consulta a la IA**.
-
----
-
-### 3. Palabras Clave de Artículos
-
-**Archivo:** `config/keywords.csv`
-
-Se usa principalmente para proveedores genéricos.
-
-```csv
-keyword,categoria_principal,subcategoria,tipo_gasto_default
-monitor,Tecnología,Equipo de Cómputo,negocio
-croquetas,Personal,Mascotas,personal
-hosting,Tecnología,Dominios y Hosting,negocio
-libro,Educación,Libros y Material,negocio
-```
-
-Permite clasificación por contenido del ticket, no solo por tienda.
-
----
-
-## Agentes de IA: Roles Claros, Responsabilidades Limitadas
-
-El sistema usa dos agentes conceptuales, cada uno con límites estrictos.
-
-### 1. The Analyst (Procesamiento Inicial)
-
-Responsable de convertir una entrada cruda en un gasto estructurado.
-
-Flujo lógico:
-
-1. **Extracción de datos** (OCR, transcripción, parsing).
-2. **Matching contra providers.csv** (prioridad máxima).
-3. **Matching contra keywords.csv** si el proveedor es genérico.
-4. **Inferencia con IA** solo si no hubo coincidencias.
-5. **Validación fiscal básica** (RFC y régimen).
-6. **Cálculo de confianza** (reglas > IA).
-
-El resultado es un gasto provisional, nunca definitivo.
-
----
-
-### 2. The Auditor (Confirmación y Correcciones)
-
-Se activa tras la respuesta del usuario.
-
-Funciones:
-
-* Confirmar registros sin cambios.
-* Aplicar correcciones explícitas.
-* Registrar trazabilidad completa.
-
-Ejemplo de auditoría:
-
-```
-AUDITORÍA: Usuario cambió monto de 150.00 a 180.00 (2025-01-14)
-```
-
-Nada se sobrescribe silenciosamente.
-
----
-
-## Tecnologías Utilizadas
-
-* **Lenguaje:** Python 3.10+
-* **API Web:** FastAPI (webhook Telegram)
-* **Bot:** python-telegram-bot
-* **IA:** OpenAI API
-* **OCR / Parsing:** vía IA
-* **Almacenamiento:** Google Sheets (vía google-api-python-client)
-* **Datos locales:** CSV / JSON
-* **Validación:** Pydantic
-
----
-
-## Estructura del Proyecto
-
-```
-/expense-tracker-python
-│── .env
-│── requirements.txt
-│
-│── /config
-│   ├── user_config.json
-│   ├── providers.csv
-│   ├── keywords.csv
-│   └── google_credentials.json
-│
-│── /src
-│   ├── main.py              # FastAPI + webhook Telegram
-│   ├── data_models.py       # Modelos Pydantic
-│   │
-│   ├── /modules
-│   │   ├── ai_agents.py     # Analyst & Auditor
-│   │   ├── config_loader.py # Carga y validación de CSV/JSON
-│   │   ├── input_handler.py # Texto, voz, imagen, PDF
-│   │   └── data_manager.py  # Google Sheets / storage
-│   │
-│   └── /prompts
-│       ├── analyst_prompt.txt
-│       └── auditor_prompt.txt
-```
-
----
-
-## Principios de Diseño
-
-* Configuración > Código
-* Reglas explícitas > Inferencia probabilística
-* Confirmación humana obligatoria
-* Auditoría antes que automatismo ciego
-* IA como herramienta, no como autoridad
-
-Este proyecto está diseñado para crecer hacia contabilidad automática, reportes fiscales y automatización financiera sin perder control humano.
+You would then run `python run_bot.py` locally.

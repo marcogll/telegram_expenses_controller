@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:80"
+    volumes:
+      - ./app:/app/app
+      - ./database.db:/app/database.db  # Mount the SQLite DB file
+    env_file:
+      - .env
+    depends_on:
+      - db # Optional: if you switch to a managed DB like Postgres
+
+  # Optional PostgreSQL service
+  # db:
+  #   image: postgres:13
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data/
+  #   environment:
+  #     - POSTGRES_USER=${DB_USER}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #     - POSTGRES_DB=${DB_NAME}
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   postgres_data:
