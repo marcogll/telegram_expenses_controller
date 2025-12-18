@@ -1,5 +1,5 @@
 """
-Database connection and session management.
+Conexión a la base de datos y gestión de sesiones.
 """
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,7 +11,7 @@ from app.config import config
 logger = logging.getLogger(__name__)
 
 try:
-    # The 'check_same_thread' argument is specific to SQLite.
+    # El argumento 'check_same_thread' es específico de SQLite.
     engine_args = {"check_same_thread": False} if config.DATABASE_URL.startswith("sqlite") else {}
     
     engine = create_engine(
@@ -23,18 +23,18 @@ try:
 
     Base = declarative_base()
 
-    logger.info("Database engine created successfully.")
+    logger.info("Motor de base de datos creado con éxito.")
 
 except Exception as e:
-    logger.critical(f"Failed to connect to the database: {e}")
-    # Exit or handle the critical error appropriately
+    logger.critical(f"Error al conectar con la base de datos: {e}")
+    # Salir o manejar el error crítico apropiadamente
     engine = None
     SessionLocal = None
     Base = None
 
 def get_db():
     """
-    Dependency for FastAPI routes to get a DB session.
+    Dependencia para que las rutas de FastAPI obtengan una sesión de BD.
     """
     if SessionLocal is None:
         raise Exception("Database is not configured. Cannot create session.")

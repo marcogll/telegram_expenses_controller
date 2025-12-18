@@ -1,5 +1,5 @@
 """
-Matching logic for providers and keywords.
+Lógica de coincidencia para proveedores y palabras clave.
 """
 import logging
 from typing import Optional, Dict, Any
@@ -7,13 +7,13 @@ from app.preprocessing.config_loader import load_providers, load_keywords
 
 logger = logging.getLogger(__name__)
 
-# Global cache for configuration
+# Caché global para la configuración
 _PROVIDERS = None
 _KEYWORDS = None
 
 def get_config():
     """
-    Returns the loaded configuration, using cache if available.
+    Devuelve la configuración cargada, utilizando la caché si está disponible.
     """
     global _PROVIDERS, _KEYWORDS
     if _PROVIDERS is None:
@@ -24,7 +24,7 @@ def get_config():
 
 def match_provider(description: str) -> Optional[Dict[str, Any]]:
     """
-    Searches for a provider name or alias in the description.
+    Busca un nombre de proveedor o alias en la descripción.
     """
     providers, _ = get_config()
     desc_lower = description.lower()
@@ -33,11 +33,11 @@ def match_provider(description: str) -> Optional[Dict[str, Any]]:
         name = p.get('provider_name', '').lower()
         aliases = p.get('aliases', [])
         
-        # Check name
+        # Verificar nombre
         if name and name in desc_lower:
             return p
         
-        # Check aliases
+        # Verificar alias
         for alias in aliases:
             if alias and alias in desc_lower:
                 return p
@@ -46,7 +46,7 @@ def match_provider(description: str) -> Optional[Dict[str, Any]]:
 
 def match_keywords(description: str) -> Optional[Dict[str, Any]]:
     """
-    Searches for keywords in the description.
+    Busca palabras clave en la descripción.
     """
     _, keywords = get_config()
     desc_lower = description.lower()
@@ -60,13 +60,13 @@ def match_keywords(description: str) -> Optional[Dict[str, Any]]:
 
 def get_metadata_from_match(description: str) -> Dict[str, Any]:
     """
-    Attempts to find metadata (category, subcategory, etc.) for a description.
-    Priority: Provider Match > Keyword Match.
+    Intenta encontrar metadatos (categoría, subcategoría, etc.) para una descripción.
+    Prioridad: Coincidencia de Proveedor > Coincidencia de Palabra Clave.
     """
-    # 1. Try Provider Match
+    # 1. Intentar coincidencia de proveedor
     provider = match_provider(description)
     if provider:
-        logger.info(f"Matched provider: {provider['provider_name']}")
+        logger.info(f"Proveedor coincidente: {provider['provider_name']}")
         return {
             "category": provider.get('categoria_principal'),
             "subcategory": provider.get('subcategoria'),
@@ -75,10 +75,10 @@ def get_metadata_from_match(description: str) -> Dict[str, Any]:
             "matched_name": provider['provider_name']
         }
     
-    # 2. Try Keyword Match
+    # 2. Intentar coincidencia de palabra clave
     keyword = match_keywords(description)
     if keyword:
-        logger.info(f"Matched keyword: {keyword['keyword']}")
+        logger.info(f"Palabra clave coincidente: {keyword['keyword']}")
         return {
             "category": keyword.get('categoria_principal'),
             "subcategory": keyword.get('subcategoria'),

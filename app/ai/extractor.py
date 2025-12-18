@@ -1,5 +1,5 @@
 """
-AI-powered data extraction from raw text.
+Extracción de datos impulsada por IA a partir de texto sin procesar.
 """
 import openai
 import json
@@ -17,15 +17,15 @@ logger = logging.getLogger(__name__)
 
 def extract_expense_data(text: str) -> ExtractedExpense:
     """
-    Uses an AI model to extract structured expense data from a raw text string.
+    Utiliza un modelo de IA para extraer datos de gastos estructurados de una cadena de texto sin procesar.
 
     Args:
-        text: The raw text from user input, OCR, or transcription.
+        text: El texto sin procesar de la entrada del usuario, OCR o transcripción.
 
     Returns:
-        An ExtractedExpense object with the data found by the AI.
+        Un objeto ExtractedExpense con los datos encontrados por la IA.
     """
-    logger.info(f"Starting AI extraction for text: '{text[:100]}...'")
+    logger.info(f"Iniciando extracción por IA para el texto: '{text[:100]}...'")
     
     try:
         response = openai.ChatCompletion.create(
@@ -38,23 +38,23 @@ def extract_expense_data(text: str) -> ExtractedExpense:
             response_format={"type": "json_object"}
         )
 
-        # The response from OpenAI should be a JSON string in the message content
+        # La respuesta de OpenAI debería ser una cadena JSON en el contenido del mensaje
         json_response = response.choices[0].message['content']
         extracted_data = json.loads(json_response)
         
-        logger.info(f"AI extraction successful. Raw JSON: {extracted_data}")
+        logger.info(f"Extracción por IA exitosa. JSON sin procesar: {extracted_data}")
 
-        # Add the original text to the model for audit purposes
+        # Añadir el texto original al modelo para fines de auditoría
         extracted_data['raw_text'] = text
 
         return ExtractedExpense(**extracted_data)
 
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode JSON from AI response: {e}")
-        # Return a model with only the raw text for manual review
+        logger.error(f"Error al decodificar JSON de la respuesta de la IA: {e}")
+        # Devolver un modelo con solo el texto sin procesar para revisión manual
         return ExtractedExpense(raw_text=text)
     except Exception as e:
-        logger.error(f"An unexpected error occurred during AI extraction: {e}")
-        # Return a model with only the raw text
+        logger.error(f"Ocurrió un error inesperado durante la extracción por IA: {e}")
+        # Devolver un modelo con solo el texto sin procesar
         return ExtractedExpense(raw_text=text)
 

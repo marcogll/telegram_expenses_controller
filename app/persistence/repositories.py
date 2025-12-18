@@ -1,6 +1,6 @@
 """
-Data access layer for persistence.
-Contains functions to interact with the database.
+Capa de acceso a datos para la persistencia.
+Contiene funciones para interactuar con la base de datos.
 """
 from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text
 from sqlalchemy.orm import Session
@@ -11,7 +11,7 @@ from app.schema.base import FinalExpense
 
 logger = logging.getLogger(__name__)
 
-# --- Database ORM Model ---
+# --- Modelo ORM de Base de Datos ---
 class ExpenseDB(Base):
     __tablename__ = "expenses"
 
@@ -33,28 +33,28 @@ class ExpenseDB(Base):
 
 def create_tables():
     """
-    Creates all database tables defined by models inheriting from Base.
+    Crea todas las tablas de la base de datos definidas por los modelos que heredan de Base.
     """
     if engine:
-        logger.info("Creating database tables if they don't exist...")
+        logger.info("Creando tablas de base de datos si no existen...")
         Base.metadata.create_all(bind=engine)
-        logger.info("Tables created successfully.")
+        logger.info("Tablas creadas con éxito.")
     else:
-        logger.error("Cannot create tables, database engine is not available.")
+        logger.error("No se pueden crear las tablas, el motor de base de datos no está disponible.")
 
-# --- Repository Functions ---
+# --- Funciones del Repositorio ---
 def save_final_expense(db: Session, expense: FinalExpense) -> ExpenseDB:
     """
-    Saves a user-confirmed expense to the database.
+    Guarda un gasto confirmado por el usuario en la base de datos.
 
     Args:
-        db: The database session.
-        expense: The FinalExpense object to save.
+        db: La sesión de la base de datos.
+        expense: El objeto FinalExpense a guardar.
 
     Returns:
-        The created ExpenseDB object.
+        El objeto ExpenseDB creado.
     """
-    logger.info(f"Saving final expense for user {expense.user_id} to the database.")
+    logger.info(f"Guardando gasto final para el usuario {expense.user_id} en la base de datos.")
     
     db_expense = ExpenseDB(**expense.dict())
     
@@ -62,5 +62,5 @@ def save_final_expense(db: Session, expense: FinalExpense) -> ExpenseDB:
     db.commit()
     db.refresh(db_expense)
     
-    logger.info(f"Successfully saved expense with ID {db_expense.id}.")
+    logger.info(f"Gasto guardado con éxito con ID {db_expense.id}.")
     return db_expense
